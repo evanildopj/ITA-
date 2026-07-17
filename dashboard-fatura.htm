@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fintelligence - Fatura Itaú Compartilhada</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0a0e1a;color:#e0e6f0;padding:20px;min-height:100vh}
+.container{max-width:1300px;margin:0 auto}
+.header{display:flex;justify-content:space-between;align-items:center;padding:25px 30px;background:rgba(15,20,40,0.85);border-radius:20px;margin-bottom:25px;border:1px solid rgba(0,255,255,0.1);backdrop-filter:blur(12px)}
+.header h1{font-size:24px;font-weight:700;background:linear-gradient(135deg,#00f0ff,#7b2ff7);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header .badge{padding:6px 16px;border-radius:20px;background:linear-gradient(135deg,rgba(0,240,255,0.15),rgba(123,47,247,0.15));border:1px solid rgba(0,240,255,0.3);font-size:13px;color:#00f0ff}
+.header .date{font-size:13px;color:#8892b0}
+.filters{display:flex;gap:15px;margin-bottom:25px;flex-wrap:wrap}
+.filters select{padding:10px 18px;border-radius:12px;background:rgba(15,20,40,0.85);border:1px solid rgba(0,240,255,0.15);color:#e0e6f0;font-size:14px;backdrop-filter:blur(8px);cursor:pointer;min-width:160px}
+.filters select:focus{outline:none;border-color:#00f0ff}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:25px}
+@media(max-width:820px){.kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.kpis{grid-template-columns:1fr}}
+.kpi-card{padding:22px 20px;border-radius:16px;background:rgba(15,20,40,0.8);border:1px solid rgba(0,240,255,0.08);backdrop-filter:blur(8px);position:relative;overflow:hidden}
+.kpi-label{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#8892b0;margin-bottom:8px}
+.kpi-value{font-size:28px;font-weight:700;color:#fff;margin-bottom:6px}
+.kpi-sub{font-size:12px;color:#00f0ff}
+.progress-bar{height:6px;border-radius:3px;background:rgba(255,255,255,0.08);margin-top:10px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;transition:width 0.5s}
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:25px}
+@media(max-width:820px){.charts-row{grid-template-columns:1fr}}
+.chart-card{padding:20px;border-radius:16px;background:rgba(15,20,40,0.8);border:1px solid rgba(0,240,255,0.08);backdrop-filter:blur(8px)}
+.chart-card h3{font-size:14px;font-weight:600;color:#8892b0;margin-bottom:15px;text-transform:uppercase;letter-spacing:1px}
+.chart-wrapper{position:relative;height:200px}
+.table-section{border-radius:16px;background:rgba(15,20,40,0.8);border:1px solid rgba(0,240,255,0.08);backdrop-filter:blur(8px);overflow:hidden;margin-bottom:30px}
+.table-header{padding:18px 22px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.06)}
+.table-header h3{font-size:14px;font-weight:600;color:#8892b0;text-transform:uppercase;letter-spacing:1px}
+.table-wrapper{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{padding:12px 16px;text-align:left;background:rgba(0,240,255,0.04);color:#8892b0;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid rgba(255,255,255,0.06)}
+tbody td{padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.04);color:#c8d0e0}
+tbody tr:hover{background:rgba(0,240,255,0.04)}
+.total-row td{font-weight:700;border-top:1px solid rgba(255,255,255,0.08);padding:12px 16px;color:#fff}
+.subtotal-avista td{background:rgba(0,240,255,0.04);border-top:1px solid rgba(0,240,255,0.15);font-size:12px}
+.subtotal-avista td:last-child{color:#00f0ff;font-weight:700}
+.subtotal-parcelado td{background:rgba(123,47,247,0.04);border-top:1px solid rgba(123,47,247,0.15);font-size:12px}
+.subtotal-parcelado td:last-child{color:#b388ff;font-weight:700}
+.total-geral td{background:rgba(123,47,247,0.12);border-top:2px solid rgba(123,47,247,0.3);font-size:14px}
+.badge-evanildo{display:inline-block;padding:2px 10px;border-radius:10px;font-size:11px;background:rgba(0,240,255,0.15);color:#00f0ff}
+.badge-alyce{display:inline-block;padding:2px 10px;border-radius:10px;font-size:11px;background:rgba(255,107,222,0.15);color:#ff6bde}
+.negativo{color:#ff6b6b}
+.footer{text-align:center;padding:20px;color:#4a5370;font-size:12px}
+.netlify-banner{background:linear-gradient(135deg,rgba(0,240,255,0.08),rgba(123,47,247,0.08));border:1px solid rgba(0,240,255,0.15);border-radius:14px;padding:16px 22px;margin-bottom:25px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.netlify-banner p{font-size:13px;color:#8892b0}
+.netlify-banner a{color:#00f0ff;text-decoration:none;font-weight:600}
+.netlify-banner .btn{display:inline-block;padding:8px 20px;border-radius:10px;background:linear-gradient(135deg,#00f0ff,#7b2ff7);color:#fff;font-weight:600;font-size:13px;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header">
+<div>
+<h1>Fintelligence</h1>
+<div style="display:flex;gap:10px;align-items:center;margin-top:4px">
+<span class="badge">💳 Fatura Itaú Compartilhada</span>
+<span class="badge" style="border-color:rgba(123,47,247,0.3);color:#b388ff">📅 Agosto 2026</span>
+</div>
+</div>
+<div class="date">📊 Atualizado em 17/07/2026</div>
+</div>
+
+<div class="filters">
+<select id="compradorFilter" onchange="aplicarFiltros()">
+<option value="todos">👥 Todos</option>
+<option value="evanildo">👤 Evanildo (Titular)</option>
+<option value="alyce">👤 ALyce (Adicional)</option>
+</select>
+<select id="mesFilter" onchange="aplicarFiltros()">
+<option value="2026-08">📆 Fatura Atual (Ago/2026)</option>
+</select>
+</div>
+
+<div class="kpis" id="kpisContainer">
+<div class="kpi-card">
+<div class="kpi-label">Fatura do Mês</div>
+<div class="kpi-value" id="kpiFatura">R$ 0,00</div>
+<div class="kpi-sub">📍 Total de compras em Aberto</div>
+</div>
+<div class="kpi-card">
+<div class="kpi-label">Limite Utilizado</div>
+<div class="kpi-value" id="kpiUtilizado">0%</div>
+<div class="progress-bar"><div class="progress-fill" id="barraUtilizado" style="width:0%"></div></div>
+<div class="kpi-sub" id="kpiUtilizadoSub">R$ 0,00 de R$ 0,00</div>
+</div>
+<div class="kpi-card">
+<div class="kpi-label">Limite Disponível</div>
+<div class="kpi-value" id="kpiDisponivel">R$ 0,00</div>
+<div class="kpi-sub" style="color:#7bff7b">✅ Folga disponível</div>
+</div>
+<div class="kpi-card">
+<div class="kpi-label">Margem Segura</div>
+<div class="kpi-value" id="kpiMargem">0%</div>
+<div class="progress-bar"><div class="progress-fill" id="barraMargem" style="width:0%"></div></div>
+<div class="kpi-sub" id="kpiMargemSub" style="color:#7bff7b">🟢 Confortável</div>
+</div>
+</div>
+
+<div class="charts-row">
+<div class="chart-card">
+<h3>📈 Evolução das Parcelas Futuras</h3>
+<div class="chart-wrapper"><canvas id="chartLinha"></canvas></div>
+</div>
+<div class="chart-card">
+<h3>🧩 Distribuição por Categoria</h3>
+<div class="chart-wrapper"><canvas id="chartRosca"></canvas></div>
+</div>
+</div>
+
+<div class="table-section">
+<div class="table-header">
+<h3>📋 Extrato Detalhado</h3>
+<span style="font-size:12px;color:#8892b0" id="totalRegistros">Carregando...</span>
+</div>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>Data</th>
+<th>Estabelecimento</th>
+<th>Categoria</th>
+<th>Titular</th>
+<th>Parcela</th>
+<th>Valor</th>
+</tr>
+</thead>
+<tbody id="tabelaExtrato"></tbody>
+</table>
+</div>
+</div>
+
+<div class="netlify-banner">
+<div>
+<p style="color:#e0e6f0;font-weight:600">🌐 Quer um link ativo para compartilhar?</p>
+<p>Arraste este arquivo .html em <a href="https://app.netlify.com/drop" target="_blank">app.netlify.com/drop</a> e ganhe um link público grátis!</p>
+</div>
+<a class="btn" href="https://app.netlify.com/drop" target="_blank">🚀 Deploy Grátis</a>
+</div>
+
+<div class="footer">
+Fintelligence © 2026 — Fatura Itaú Compartilhada • Evanildo (Titular) + ALyce (Adicional)
+</div>
+
+</div>
+
+<script>
+var TRANSACTIONS = [
+{data:"06/07/2026",estab:"Pagamento Efetuado",cat:"Pagamento",titular:"Evanildo",parcela:"—",valor:-3288.35},
+{data:"15/07/2026",estab:"Netflix",cat:"Streaming",titular:"Evanildo",parcela:"—",valor:20.90},
+{data:"13/07/2026",estab:"Com De Gas Morango",cat:"Casa",titular:"ALyce",parcela:"—",valor:130.00},
+{data:"13/07/2026",estab:"Karima Sushi",cat:"Alimentação",titular:"ALyce",parcela:"—",valor:33.79},
+{data:"13/07/2026",estab:"Lee Supermercados",cat:"Supermercado",titular:"ALyce",parcela:"—",valor:6.99},
+{data:"13/07/2026",estab:"Mercado Santo Antonio",cat:"Supermercado",titular:"ALyce",parcela:"—",valor:16.00},
+{data:"13/07/2026",estab:"Itaú Avisa",cat:"Serviços",titular:"Evanildo",parcela:"—",valor:7.99},
+{data:"12/07/2026",estab:"Shein",cat:"Roupas",titular:"ALyce",parcela:"1/2",valor:37.23},
+{data:"12/07/2026",estab:"Imifarma",cat:"Farmácia",titular:"ALyce",parcela:"—",valor:49.69},
+{data:"12/07/2026",estab:"Roxinho Das Doses",cat:"Alimentação",titular:"ALyce",parcela:"—",valor:27.00},
+{data:"12/07/2026",estab:"Seca Abdômen",cat:"Saúde",titular:"Evanildo",parcela:"—",valor:19.90},
+{data:"12/07/2026",estab:"Daniel Fabricio",cat:"Saúde",titular:"Evanildo",parcela:"1/4",valor:40.01},
+{data:"11/07/2026",estab:"Uber",cat:"Transporte",titular:"ALyce",parcela:"—",valor:12.99},
+{data:"11/07/2026",estab:"Uber",cat:"Transporte",titular:"ALyce",parcela:"—",valor:13.98},
+{data:"11/07/2026",estab:"Uber",cat:"Transporte",titular:"ALyce",parcela:"—",valor:17.29},
+{data:"11/07/2026",estab:"Arcos Dourados",cat:"Alimentação",titular:"ALyce",parcela:"—",valor:42.89},
+{data:"11/07/2026",estab:"Adegabrito",cat:"Alimentação",titular:"ALyce",parcela:"—",valor:60.00},
+{data:"11/07/2026",estab:"Adegabrito",cat:"Alimentação",titular:"ALyce",parcela:"—",valor:3.00},
+{data:"11/07/2026",estab:"Francisco Morais",cat:"Serviços",titular:"ALyce",parcela:"—",valor:17.00},
+{data:"11/07/2026",estab:"Francisco Morais",cat:"Serviços",titular:"ALyce",parcela:"—",valor:100.00},
+{data:"11/07/2026",estab:"Zamp (Burger King)",cat:"Alimentação",titular:"ALyce",parcela:"—",valor:53.96},
+{data:"10/07/2026",estab:"Lee Supermercados",cat:"Supermercado",titular:"ALyce",parcela:"—",valor:73.53},
+{data:"10/07/2026",estab:"Janaina Paiva",cat:"Beleza",titular:"ALyce",parcela:"—",valor:53.00},
+{data:"10/07/2026",estab:"Edson Santana",cat:"Serviços",titular:"ALyce",parcela:"—",valor:20.00},
+{data:"08/07/2026",estab:"Ifood Club",cat:"Alimentação",titular:"ALyce",parcela:"—",valor:5.95},
+{data:"08/07/2026",estab:"Mercado Santo Antonio",cat:"Supermercado",titular:"ALyce",parcela:"—",valor:17.00},
+{data:"07/07/2026",estab:"Amazon Prime",cat:"Streaming",titular:"Evanildo",parcela:"—",valor:19.90},
+{data:"07/07/2026",estab:"Lee Supermercados",cat:"Supermercado",titular:"ALyce",parcela:"—",valor:13.09},
+{data:"07/07/2026",estab:"Ton Massoterapia",cat:"Saúde",titular:"ALyce",parcela:"—",valor:180.00},
+{data:"07/07/2026",estab:"Esfihas Da Dag",cat:"Alimentação",titular:"ALyce",parcela:"—",valor:14.20},
+{data:"06/07/2026",estab:"Totalpass",cat:"Saúde",titular:"Evanildo",parcela:"—",valor:109.90},
+{data:"06/07/2026",estab:"Empreira Pães",cat:"Alimentação",titular:"ALyce",parcela:"—",valor:24.50},
+{data:"06/07/2026",estab:"Enel SP",cat:"Contas",titular:"ALyce",parcela:"—",valor:112.83},
+{data:"06/07/2026",estab:"Uber",cat:"Transporte",titular:"ALyce",parcela:"—",valor:19.98},
+{data:"05/07/2026",estab:"Bluhen",cat:"Casa",titular:"Evanildo",parcela:"1/3",valor:155.73},
+{data:"05/07/2026",estab:"Arcos Dourados",cat:"Alimentação",titular:"ALyce",parcela:"—",valor:20.86},
+{data:"05/07/2026",estab:"Arcos Dourados",cat:"Alimentação",titular:"ALyce",parcela:"—",valor:32.37},
+{data:"05/07/2026",estab:"HBO Max",cat:"Streaming",titular:"Evanildo",parcela:"—",valor:22.45},
+{data:"05/07/2026",estab:"Roxinho Das Doses",cat:"Alimentação",titular:"ALyce",parcela:"—",valor:27.00},
+{data:"04/07/2026",estab:"Pad Pords",cat:"Alimentação",titular:"ALyce",parcela:"—",valor:6.00},
+{data:"04/07/2026",estab:"Auto Tavares",cat:"Serviços",titular:"ALyce",parcela:"—",valor:15.00},
+{data:"04/07/2026",estab:"Lucas Arantes",cat:"Serviços",titular:"ALyce",parcela:"—",valor:5.00},
+{data:"04/07/2026",estab:"G2 Comércio",cat:"Supermercado",titular:"ALyce",parcela:"—",valor:31.78},
+{data:"04/07/2026",estab:"Crunchyroll",cat:"Streaming",titular:"Evanildo",parcela:"—",valor:24.90},
+{data:"04/07/2026",estab:"Lee Supermercados",cat:"Supermercado",titular:"ALyce",parcela:"—",valor:52.89},
+{data:"04/07/2026",estab:"Hideo Verduras",cat:"Alimentação",titular:"ALyce",parcela:"—",valor:24.00},
+{data:"04/07/2026",estab:"Marcio Antonio",cat:"Serviços",titular:"ALyce",parcela:"—",valor:5.00},
+{data:"04/07/2026",estab:"Abel Tavares",cat:"Serviços",titular:"ALyce",parcela:"—",valor:8.95},
+{data:"04/07/2026",estab:"Uber",cat:"Transporte",titular:"ALyce",parcela:"—",valor:13.41},
+{data:"03/07/2026",estab:"Mercado Livre (Refri)",cat:"Eletrodomésticos",titular:"Evanildo",parcela:"1/3",valor:50.05},
+{data:"01/07/2026",estab:"Webbolos",cat:"Alimentação",titular:"ALyce",parcela:"—",valor:135.00},
+{data:"01/07/2026",estab:"Lee Supermercados",cat:"Supermercado",titular:"ALyce",parcela:"—",valor:96.97},
+{data:"01/07/2026",estab:"Point Dos Salgados",cat:"Alimentação",titular:"ALyce",parcela:"—",valor:30.00},
+{data:"01/07/2026",estab:"Cinemark",cat:"Lazer",titular:"Evanildo",parcela:"—",valor:38.90},
+{data:"16/06/2026",estab:"Bluhen",cat:"Casa",titular:"Evanildo",parcela:"2/10",valor:60.33},
+{data:"12/06/2026",estab:"Shaplife",cat:"Saúde",titular:"Evanildo",parcela:"2/3",valor:49.94},
+{data:"11/06/2026",estab:"Inovashop (Red)",cat:"Assinaturas",titular:"Evanildo",parcela:"2/12",valor:55.33},
+{data:"10/06/2026",estab:"Porto Aroma",cat:"Casa",titular:"Evanildo",parcela:"2/4",valor:110.42},
+{data:"09/06/2026",estab:"Prazer Mo",cat:"Lazer",titular:"ALyce",parcela:"2/3",valor:116.68},
+{data:"05/06/2026",estab:"Casas Bahia",cat:"Eletrodomésticos",titular:"ALyce",parcela:"2/6",valor:159.60},
+{data:"19/05/2026",estab:"Mercado Livre",cat:"Supermercado",titular:"Evanildo",parcela:"3/3",valor:53.30},
+{data:"19/05/2026",estab:"Mercado Livre",cat:"Supermercado",titular:"Evanildo",parcela:"3/3",valor:54.44},
+{data:"11/05/2026",estab:"P.A Enterprise",cat:"Saúde",titular:"Evanildo",parcela:"3/6",valor:17.90},
+{data:"11/05/2026",estab:"P.A Enterprise",cat:"Saúde",titular:"Evanildo",parcela:"3/6",valor:8.67},
+{data:"03/05/2026",estab:"Vshape (Kiwify)",cat:"Cursos",titular:"Evanildo",parcela:"3/12",valor:30.79},
+{data:"19/03/2026",estab:"Magalu",cat:"Eletrodomésticos",titular:"Evanildo",parcela:"5/5",valor:139.80},
+{data:"16/03/2026",estab:"Adapta ONE",cat:"Assinaturas",titular:"Evanildo",parcela:"5/12",valor:199.00},
+{data:"28/11/2025",estab:"Asimov Academy",cat:"Cursos",titular:"Evanildo",parcela:"9/12",valor:17.47}
+];
+
+var LIMITES = {evanildo:10240,alyce:2500,todos:12740};
+
+function getTransacoesFiltradas() {
+var comprador = document.getElementById('compradorFilter').value;
+return TRANSACTIONS.filter(function(t) {
+if(comprador==='evanildo' && t.titular!=='Evanildo') return false;
+if(comprador==='alyce' && t.titular!=='ALyce') return false;
+return true;
+});
+}
+
+function getDespesas(transacoes) {
+return transacoes.filter(function(t){return t.valor>0});
+}
+
+function atualizarKPIs() {
+var trans = getTransacoesFiltradas();
+var despesas = getDespesas(trans);
+var totalFatura = 0;
+for(var i=0;i<despesas.length;i++) totalFatura += despesas[i].valor;
+totalFatura = Math.round(totalFatura*100)/100;
+
+var comprador = document.getElementById('compradorFilter').value;
+var limite = LIMITES[comprador];
+var utilizadoPct = Math.round((totalFatura/limite)*1000)/10;
+if(utilizadoPct>100) utilizadoPct=100;
+var disponivel = limite - totalFatura;
+if(disponivel<0) disponivel=0;
+var margem = Math.round((disponivel/limite)*1000)/10;
+
+document.getElementById('kpiFatura').textContent = 'R$ '+totalFatura.toFixed(2).replace('.',',');
+document.getElementById('kpiUtilizado').textContent = utilizadoPct+'%';
+document.getElementById('kpiUtilizadoSub').textContent = 'R$ '+totalFatura.toFixed(2).replace('.',',')+' de R$ '+limite.toFixed(2).replace('.',',');
+
+var corUtilizado = utilizadoPct>80?'#ff6b6b':(utilizadoPct>50?'#ffd93d':'#00f0ff');
+document.getElementById('barraUtilizado').style.width=utilizadoPct+'%';
+document.getElementById('barraUtilizado').style.background=corUtilizado;
+
+document.getElementById('kpiDisponivel').textContent = 'R$ '+disponivel.toFixed(2).replace('.',',');
+var corMargem = margem>40?'#7bff7b':(margem>20?'#ffd93d':'#ff6b6b');
+var txtMargem = margem>40?'🟢 Confortável':'🔴 Atenção';
+document.getElementById('kpiMargem').textContent = margem+'%';
+document.getElementById('barraMargem').style.width=margem+'%';
+document.getElementById('barraMargem').style.background=corMargem;
+document.getElementById('kpiMargemSub').textContent = txtMargem;
+document.getElementById('kpiMargemSub').style.color = corMargem;
+}
+
+function atualizarGraficoLinha() {
+var ctx = document.getElementById('chartLinha').getContext('2d');
+if(window._chartLinha) {window._chartLinha.destroy()}
+var transFiltradas = getTransacoesFiltradas();
+var meses = [];
+var valores = [];
+for(var m=0;m<12;m++){
+var d=new Date(2026,7+m,1);
+var label=d.toLocaleString('pt-BR',{month:'short',year:'2-digit'});
+meses.push(label);
+var total=0;
+for(var i=0;i<transFiltradas.length;i++){
+var t=transFiltradas[i];
+if(t.parcela!=='—' && t.valor>0){
+var parts=t.parcela.split('/');
+var atual=parseInt(parts[0]);
+var totalP=parseInt(parts[1]);
+var dataParts=t.data.split('/');
+var mesRef=parseInt(dataParts[1])-1;
+var anoRef=parseInt(dataParts[2]);
+var mesParcela=mesRef + (m + 1 - atual);
+var anoParcela=anoRef;
+while(mesParcela>11){mesParcela-=12;anoParcela++}
+while(mesParcela<0){mesParcela+=12;anoParcela--}
+if(anoParcela===2026 && mesParcela===7+m) total+=t.valor;
+}
+}
+valores.push(Math.round(total*100)/100);
+}
+window._chartLinha = new Chart(ctx,{
+type:'line',
+data:{labels:meses,datasets:[{label:'Parcelas Futuras',data:valores,borderColor:'#00f0ff',backgroundColor:'rgba(0,240,255,0.1)',fill:true,tension:0.3,pointBackgroundColor:'#00f0ff',pointRadius:4}]},
+options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8892b0',font:{size:11}}}},scales:{x:{ticks:{color:'#4a5370',font:{size:10}},grid:{color:'rgba(255,255,255,0.03)'}},y:{ticks:{color:'#4a5370',font:{size:10},callback:function(v){return'R$'+v}},grid:{color:'rgba(255,255,255,0.03)'}}}}
+});
+}
+
+function atualizarGraficoRosca() {
+var ctx = document.getElementById('chartRosca').getContext('2d');
+if(window._chartRosca) {window._chartRosca.destroy()}
+var transFiltradas = getTransacoesFiltradas();
+var catMap={};
+for(var i=0;i<transFiltradas.length;i++){
+var t=transFiltradas[i];
+if(t.valor>0){
+if(!catMap[t.cat]) catMap[t.cat]=0;
+catMap[t.cat]+=t.valor;
+}
+}
+var labels=[],data=[],colors=[];
+var palette=['#00f0ff','#7b2ff7','#ff6bde','#ffd93d','#7bff7b','#ff6b6b','#ff9f43','#54a0ff','#5f27cd','#01a3a4','#f368e0','#ee5a24','#0abde3','#10ac84','#2e86de'];
+var idx=0;
+for(var cat in catMap){
+labels.push(cat);
+data.push(Math.round(catMap[cat]*100)/100);
+colors.push(palette[idx%palette.length]);
+idx++;
+}
+window._chartRosca = new Chart(ctx,{
+type:'doughnut',
+data:{labels:labels,datasets:[{data:data,backgroundColor:colors,borderColor:'#0a0e1a',borderWidth:2}]},
+options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:'#8892b0',font:{size:11},padding:8}}}}
+});
+}
+
+function atualizarTabela() {
+var tbody = document.getElementById('tabelaExtrato');
+tbody.innerHTML='';
+var trans = getTransacoesFiltradas();
+var totalGeral = 0;
+var totalParcelado = 0;
+var totalAvista = 0;
+
+for(var i=0;i<trans.length;i++){
+var t=trans[i];
+var tr=document.createElement('tr');
+var classe=t.valor<0?'negativo':'';
+tr.innerHTML='<td>'+t.data+'</td><td>'+t.estab+'</td><td>'+t.cat+'</td><td><span class="'+(t.titular==='Evanildo'?'badge-evanildo':'badge-alyce')+'">'+t.titular+'</span></td><td>'+(t.parcela!=='—'?t.parcela:'—')+'</td><td class="'+classe+'">R$ '+Math.abs(t.valor).toFixed(2).replace('.',',')+'</td>';
+if(t.valor>0){
+totalGeral+=t.valor;
+if(t.parcela!=='—'){totalParcelado+=t.valor}
+else{totalAvista+=t.valor}
+}
+tbody.appendChild(tr);
+}
+
+var tr1=document.createElement('tr');
+tr1.className='subtotal-avista';
+tr1.innerHTML='<td colspan="4"></td><td style="text-align:right;font-size:12px;color:#00f0ff">💳 Compras à Vista</td><td style="font-weight:700">R$ '+totalAvista.toFixed(2).replace('.',',')+'</td>';
+tbody.appendChild(tr1);
+
+var tr2=document.createElement('tr');
+tr2.className='subtotal-parcelado';
+tr2.innerHTML='<td colspan="4"></td><td style="text-align:right;font-size:12px;color:#b388ff">📦 Compras Parceladas</td><td style="font-weight:700">R$ '+totalParcelado.toFixed(2).replace('.',',')+'</td>';
+tbody.appendChild(tr2);
+
+var tr3=document.createElement('tr');
+tr3.className='total-geral';
+tr3.innerHTML='<td colspan="4"></td><td style="text-align:right;font-weight:700">💰 Total das Despesas</td><td style="font-weight:700">R$ '+totalGeral.toFixed(2).replace('.',',')+'</td>';
+tbody.appendChild(tr3);
+
+document.getElementById('totalRegistros').textContent = trans.length+' lançamentos';
+}
+
+function aplicarFiltros() {
+atualizarKPIs();
+atualizarGraficoLinha();
+atualizarGraficoRosca();
+atualizarTabela();
+}
+
+aplicarFiltros();
+</script>
+</body>
+</html>
